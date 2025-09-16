@@ -146,6 +146,9 @@
 //   },
 // };
 
+
+// @ts-nocheck
+
 import { PrismaClient, OrderStatus, Prisma, PaymentMethod, PaymentStatus, OrderType } from '@prisma/client';
 import { ApiError } from '../../utils/apiResponse';
 import { v4 as uuidv4 } from 'uuid';

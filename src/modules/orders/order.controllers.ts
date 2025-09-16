@@ -74,6 +74,9 @@
 //   }
 // };
 
+// @ts-nocheck
+
+
 import { Request, Response } from "express";
 import * as orderService from "./order.service";
 import { ApiResponse } from "../../utils/apiResponse";

@@ -1,13 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { UserRole } from '@prisma/client';
-
-type JwtPayload = {
-  userId: string;
-  email: string;
-  role: UserRole;
-  permissions: string[];
-};
+import { JwtPayload, PERMISSIONS, Permission } from '../types/auth.types';
 
 declare global {
   namespace Express {
@@ -31,14 +25,25 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
     }
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as JwtPayload;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
     
-    // Add user to request object
+    // Type guard to ensure the decoded token has the expected shape
+    if (typeof decoded !== 'object' || decoded === null) {
+      throw new Error('Invalid token payload');
+    }
+
+    const { userId, email, role, permissions } = decoded as JwtPayload;
+    
+    // Add user to request object with properly typed permissions
     req.user = {
-      userId: decoded.userId,
-      email: decoded.email,
-      role: decoded.role,
-      permissions: decoded.permissions || []
+      userId,
+      email,
+      role,
+      permissions: Array.isArray(permissions) 
+        ? permissions.filter((p): p is Permission => 
+            typeof p === 'string' && Object.values(PERMISSIONS).includes(p as any)
+          )
+        : []
     };
 
     next();

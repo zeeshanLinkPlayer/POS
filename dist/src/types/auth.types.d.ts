@@ -1,0 +1,41 @@
+import { UserRole } from '@prisma/client';
+export declare const PERMISSIONS: {
+    readonly USER_CREATE: "USER_CREATE";
+    readonly USER_READ: "USER_READ";
+    readonly USER_UPDATE: "USER_UPDATE";
+    readonly USER_DELETE: "USER_DELETE";
+    readonly MANAGER_CREATE: "MANAGER_CREATE";
+    readonly MANAGER_READ: "MANAGER_READ";
+    readonly MANAGER_UPDATE: "MANAGER_UPDATE";
+    readonly ORDER_CREATE: "ORDER_CREATE";
+    readonly ORDER_READ: "ORDER_READ";
+    readonly ORDER_UPDATE: "ORDER_UPDATE";
+    readonly ORDER_DELETE: "ORDER_DELETE";
+    readonly PRODUCT_CREATE: "PRODUCT_CREATE";
+    readonly PRODUCT_READ: "PRODUCT_READ";
+    readonly PRODUCT_UPDATE: "PRODUCT_UPDATE";
+    readonly PRODUCT_DELETE: "PRODUCT_DELETE";
+    readonly MENU_CREATE: "MENU_CREATE";
+    readonly MENU_READ: "MENU_READ";
+    readonly MENU_UPDATE: "MENU_UPDATE";
+    readonly MENU_DELETE: "MENU_DELETE";
+};
+type PermissionKey = keyof typeof PERMISSIONS;
+type PermissionValue = typeof PERMISSIONS[PermissionKey];
+export type Permission = PermissionValue;
+export type JwtPayload = {
+    userId: string;
+    email: string;
+    role: UserRole;
+    permissions: Permission[];
+    iat?: number;
+    exp?: number;
+};
+export type RequestWithUser = Request & {
+    user: JwtPayload;
+};
+type RolePermissionsType = Record<UserRole, Permission[]>;
+export declare const getPermissionsForRole: (role: UserRole) => Permission[];
+export declare const RolePermissions: RolePermissionsType;
+export declare const hasPermission: (user: JwtPayload, requiredPermissions: Permission[]) => boolean;
+export {};

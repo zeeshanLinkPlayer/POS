@@ -1,3 +1,4 @@
+
 import { Router } from "express";
 import { productController } from "./product.controller";
 import { authenticateJWT, checkPermission, validateRequest } from "../../middleware/auth.middleware";
@@ -14,14 +15,14 @@ router.get("/:id", checkPermission([Permission.PRODUCT_READ]), productController
 router.post(
   "/",
   checkPermission([Permission.PRODUCT_CREATE]),
-  validateRequest(createProductSchema),
+  validateRequest({body:createProductSchema}),
   productController.create
 );
 
 router.put(
   "/:id",
   checkPermission([Permission.PRODUCT_UPDATE]),
-  validateRequest(updateProductSchema),
+  validateRequest({body:updateProductSchema}),
   productController.update
 );
 

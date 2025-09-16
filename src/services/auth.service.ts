@@ -1,7 +1,8 @@
-import { PrismaClient, User, UserRole } from '@prisma/client';
+
+import { PrismaClient, User, UserRole, Prisma } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { JwtPayload } from '../types/auth.types';
+import { JwtPayload, Permission, PERMISSIONS } from '../types/auth.types';
 import { getPermissionsForRole } from '../types/auth.types';
 
 const prisma = new PrismaClient();
@@ -9,7 +10,18 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 class AuthService {
   async login(email: string, password: string) {
-    const user = await prisma.user.findUnique({ where: { email } });
+    // Find user with their permissions
+    const user = await prisma.user.findUnique({ 
+      where: { email },
+      include: { 
+        permissions: {
+          select: {
+            permission: true
+          }
+        }
+      }
+    });
+    
     if (!user) {
       throw new Error('Invalid credentials');
     }
@@ -20,22 +32,40 @@ class AuthService {
     }
 
     // Get permissions based on user role
-    const permissions = getPermissionsForRole(user.role);
-
-    // Update user with current permissions (in case they changed)
-    const updatedUser = await prisma.user.update({
-      where: { id: user.id },
-      data: { permissions: { set: permissions } },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        permissions: true,
-        createdAt: true,
-        updatedAt: true
-      }
-    });
+    const rolePermissions = getPermissionsForRole(user.role);
+    
+    // Update user permissions if needed
+    const currentPermissions = user.permissions.map(up => up.permission);
+    const needsUpdate = JSON.stringify(currentPermissions.sort()) !== JSON.stringify(rolePermissions.sort());
+    
+    let updatedUser = user;
+    
+    if (needsUpdate) {
+      // Delete existing permissions
+      await prisma.userPermission.deleteMany({
+        where: { userId: user.id }
+      });
+      
+      // Create new permissions
+      await prisma.userPermission.createMany({
+        data: rolePermissions.map(permission => ({
+          userId: user.id,
+          permission
+        }))
+      });
+      
+      // Fetch updated user with new permissions
+      updatedUser = await prisma.user.findUnique({
+        where: { id: user.id },
+        include: { 
+          permissions: {
+            select: {
+              permission: true
+            }
+          }
+        }
+      }) as typeof user;
+    }
 
     // Generate JWT token
     const token = jwt.sign(
@@ -43,29 +73,35 @@ class AuthService {
         userId: updatedUser.id,
         email: updatedUser.email,
         role: updatedUser.role,
-        permissions: updatedUser.permissions,
+        permissions: updatedUser.permissions.map(up => up.permission as Permission),
       } as JwtPayload,
       JWT_SECRET,
       { expiresIn: '1d' }
     );
 
-    return {
-      user: updatedUser,
-      token,
-    };
+    return { 
+      user: {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        name: updatedUser.name,
+        role: updatedUser.role,
+        permissions: updatedUser.permissions.map(up => up.permission as Permission),
+        createdAt: updatedUser.createdAt,
+        updatedAt: updatedUser.updatedAt
+      }, 
+      token 
+    };    
   }
 
   async getCurrentUser(userId: string) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        permissions: true,
-        createdAt: true,
-        updatedAt: true
+      include: { 
+        permissions: {
+          select: {
+            permission: true
+          }
+        }
       }
     });
 
@@ -75,27 +111,67 @@ class AuthService {
 
     // Ensure permissions are up to date with role
     const expectedPermissions = getPermissionsForRole(user.role);
-    if (JSON.stringify(user.permissions.sort()) !== JSON.stringify(expectedPermissions.sort())) {
+    const currentPermissions = user.permissions.map(up => up.permission);
+    
+    if (JSON.stringify(currentPermissions.sort()) !== JSON.stringify(expectedPermissions.sort())) {
       return this.updateUserPermissions(user.id, expectedPermissions);
     }
 
-    return user;
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      permissions: currentPermissions as Permission[],
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt
+    };
   }
 
-  private async updateUserPermissions(userId: string, permissions: string[]) {
-    return prisma.user.update({
+  private async updateUserPermissions(userId: string, permissions: Permission[]) {
+    // Filter out any invalid permissions
+    const validPermissions = permissions.filter(p => 
+      Object.values(PERMISSIONS).includes(p as any)
+    );
+
+    // Delete existing permissions
+    await prisma.userPermission.deleteMany({
+      where: { userId }
+    });
+    
+    // Create new permissions
+    await prisma.userPermission.createMany({
+      data: validPermissions.map(permission => ({
+        userId,
+        permission
+      }))
+    });
+    
+    // Fetch updated user with new permissions
+    const updatedUser = await prisma.user.findUnique({
       where: { id: userId },
-      data: { permissions: { set: permissions } },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        permissions: true,
-        createdAt: true,
-        updatedAt: true
+      include: { 
+        permissions: {
+          select: {
+            permission: true
+          }
+        }
       }
     });
+
+    if (!updatedUser) {
+      throw new Error('Failed to update user permissions');
+    }
+
+    return {
+      id: updatedUser.id,
+      email: updatedUser.email,
+      name: updatedUser.name,
+      role: updatedUser.role,
+      permissions: updatedUser.permissions.map(up => up.permission as Permission),
+      createdAt: updatedUser.createdAt,
+      updatedAt: updatedUser.updatedAt
+    };
   }
 }
 
