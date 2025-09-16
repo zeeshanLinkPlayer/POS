@@ -7,24 +7,16 @@ import { apiLimiter } from './src/middleware/auth.middleware';
 import routes from './src/modules';
 import { Prisma } from '@prisma/client';
 import httpStatus from 'http-status';
-import cookieParser from 'cookie-parser';
+const cookieParser = require('cookie-parser');
 const app = express();
 
 // Security middleware
 app.use(helmet());
 
-// CORS configuration
-const allowedOrigins = ['http://localhost:3000', 'http://localhost:4000'];
 
+// CORS configuration - allowing all origins
 const corsOptions = {
-  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: '*',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'X-CSRF-Token'],
