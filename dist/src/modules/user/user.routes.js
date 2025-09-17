@@ -37,7 +37,7 @@ const express_1 = require("express");
 const userController = __importStar(require("./user.controller"));
 const auth_middleware_1 = require("../../middleware/auth.middleware");
 const client_1 = require("@prisma/client");
-const prisma_1 = require("../../generated/prisma");
+const client_2 = require("@prisma/client");
 const router = (0, express_1.Router)();
 // Public routes (no authentication required)
 router.post("/login", userController.login);
@@ -46,16 +46,16 @@ router.use(auth_middleware_1.authenticateJWT);
 // Protected routes (require authentication)
 router.get("/profile", userController.getProfile);
 // GET all users (needs permission)
-router.get("/", (0, auth_middleware_1.checkPermission)([prisma_1.Permission.USER_READ]), userController.getUsers);
+router.get("/", (0, auth_middleware_1.checkPermission)([client_2.Permission.USER_READ]), userController.getUsers);
 // Regular user routes
-router.post("/", (0, auth_middleware_1.checkPermission)([prisma_1.Permission.USER_CREATE]), userController.createUser);
+router.post("/", (0, auth_middleware_1.checkPermission)([client_2.Permission.USER_CREATE]), userController.createUser);
 // GET user by ID (needs permission)
-router.get("/:id", (0, auth_middleware_1.checkPermission)([prisma_1.Permission.USER_READ]), userController.getUser);
+router.get("/:id", (0, auth_middleware_1.checkPermission)([client_2.Permission.USER_READ]), userController.getUser);
 // UPDATE user (needs permission)
-router.put("/:id", (0, auth_middleware_1.checkPermission)([prisma_1.Permission.USER_UPDATE]), userController.updateUser);
+router.put("/:id", (0, auth_middleware_1.checkPermission)([client_2.Permission.USER_UPDATE]), userController.updateUser);
 // DELETE user (needs Admin role)
 router.delete("/:id", (0, auth_middleware_1.checkRole)([client_1.UserRole.ADMIN]), userController.deleteUser);
 // GET profile (needs permission)
-router.get("/profile", (0, auth_middleware_1.checkPermission)([prisma_1.Permission.USER_READ]), userController.getProfile);
+router.get("/profile", (0, auth_middleware_1.checkPermission)([client_2.Permission.USER_READ]), userController.getProfile);
 exports.default = router;
 //# sourceMappingURL=user.routes.js.map

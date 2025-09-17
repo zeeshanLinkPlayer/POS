@@ -6,7 +6,7 @@ import {
   checkRole,
 } from "../../middleware/auth.middleware";
 import { UserRole } from "@prisma/client";
-import { Permission } from "../../generated/prisma";
+import { Permission } from "@prisma/client";
 
 const router = Router();
 
