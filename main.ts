@@ -4,7 +4,7 @@ import { PrismaClient, UserRole } from '@prisma/client';
 import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
-const port = 8080;
+const port = config.port;
 
 async function ensureAdminUser() {
   try {
