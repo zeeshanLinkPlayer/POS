@@ -149,6 +149,7 @@ export const login = async (req: Request, res: Response) => {
     const response = ApiResponse.success(result, 'Login successful');
     ApiResponse.send(res, response);
   } catch (error: any) {
+    console.log(error,"error")
     const apiError = error instanceof ApiError 
       ? error 
       : ApiError.unauthorized('Authentication failed');
@@ -157,7 +158,7 @@ export const login = async (req: Request, res: Response) => {
 };
 
 export const getProfile = async (req: Request, res: Response) => {
-  console.log()
+  console.log(req.user,"user")
   try {
     if (!req.user?.userId) {
       throw ApiError.unauthorized('User not authenticated');
@@ -185,6 +186,7 @@ export const getProfile = async (req: Request, res: Response) => {
 
     ApiResponse.send(res, response);
   } catch (error: any) {
+    console.log(error,"error")
     const apiError =
       error instanceof ApiError
         ? error

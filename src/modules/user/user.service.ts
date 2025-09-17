@@ -399,6 +399,7 @@ export const userService = {
         token 
       };
     } catch (error) {
+      console.log(error,"error")
       if (error instanceof ApiError) throw error;
       throw ApiError.internal('Login failed');
     }
@@ -426,6 +427,7 @@ export const userService = {
 
       return user;
     } catch (error) {
+      console.log(error,"error")
       if (error instanceof ApiError) throw error;
       throw ApiError.internal('Failed to fetch profile');
     }
