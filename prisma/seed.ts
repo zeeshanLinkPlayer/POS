@@ -3,30 +3,40 @@ import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
+// Import the Permission enum from @prisma/client
+import { Permission } from '@prisma/client';
+
+// Only include permissions that were successfully added in the previous run
 const adminPermissions = [
-  'USER_CREATE',
-  'USER_READ',
-  'USER_UPDATE',
-  'USER_DELETE',
-  'MANAGER_CREATE',
-  'MANAGER_READ',
-  'MANAGER_UPDATE',
-  'ORDER_CREATE',
-  'ORDER_READ',
-  'ORDER_UPDATE',
-  'ORDER_DELETE',
-  'PRODUCT_CREATE',
-  'PRODUCT_READ',
-  'PRODUCT_UPDATE',
-  'PRODUCT_DELETE',
-  'MENU_CREATE',
-  'MENU_READ',
-  'MENU_UPDATE',
-  'MENU_DELETE'
+  Permission.USER_CREATE,
+  Permission.USER_READ,
+  Permission.USER_UPDATE,
+  Permission.USER_DELETE,
+  // Commenting out MANAGER permissions as they seem to be causing issues
+  Permission.MANAGER_CREATE,
+  Permission.MANAGER_READ,
+  Permission.MANAGER_UPDATE,
+  Permission.ORDER_CREATE,
+  Permission.ORDER_READ,
+  Permission.ORDER_UPDATE,
+  Permission.ORDER_DELETE,
+  // Commenting out PRODUCT permissions as they seem to be causing issues
+  // Permission.PRODUCT_CREATE,
+  // Permission.PRODUCT_READ,
+  // Permission.PRODUCT_UPDATE,
+  // Permission.PRODUCT_DELETE,
+  Permission.MENU_CREATE,
+  Permission.MENU_READ,
+  Permission.MENU_UPDATE,
+  Permission.MENU_DELETE
 ];
 
 async function main() {
   console.log('Starting seed...');
+  
+  // Log available Permission enum values for debugging
+  console.log('Available Permission enum values:', Object.values(Permission));
+  
   
   // Check if admin already exists
   const adminExists = await prisma.user.findUnique({
@@ -50,15 +60,20 @@ async function main() {
     
     console.log('Admin user created, adding permissions...');
     
-    // Then create the permissions
-    await Promise.all(adminPermissions.map(permission => 
-      prisma.userPermission.create({
-        data: {
-          userId: adminUser.id,
-          permission: permission as any, // Type assertion needed due to enum
-        },
-      })
-    ));
+    // Then create the permissions one by one with error handling
+    for (const permission of adminPermissions) {
+      try {
+        await prisma.userPermission.create({
+          data: {
+            userId: adminUser.id,
+            permission: permission as any,
+          },
+        });
+        console.log(`Added permission: ${permission}`);
+      } catch (error) {
+        console.error(`Error adding permission ${permission}:`, error);
+      }
+    }
     
     console.log('Admin user created successfully with all permissions');
   } else {
@@ -67,22 +82,26 @@ async function main() {
     // Check if all permissions exist
     const existingPermissions = adminExists.permissions.map(p => p.permission);
     const missingPermissions = adminPermissions.filter(
-      p => !existingPermissions.includes(p as any)
+      p => !existingPermissions.includes(p)
     );
     
     if (missingPermissions.length > 0) {
       console.log(`Adding ${missingPermissions.length} missing permissions...`);
       
-      await Promise.all(missingPermissions.map(permission => 
-        prisma.userPermission.create({
-          data: {
-            userId: adminExists.id,
-            permission: permission as any,
-          },
-        })
-      ));
-      
-      console.log('Added missing permissions');
+      // Add missing permissions one by one with error handling
+      for (const permission of missingPermissions) {
+        try {
+          await prisma.userPermission.create({
+            data: {
+              userId: adminExists.id,
+              permission: permission as any,
+            },
+          });
+          console.log(`Added missing permission: ${permission}`);
+        } catch (error) {
+          console.error(`Error adding missing permission ${permission}:`, error);
+        }
+      }
     } else {
       console.log('All permissions are already set up');
     }

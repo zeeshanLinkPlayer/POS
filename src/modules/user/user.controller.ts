@@ -131,14 +131,20 @@ export const login = async (req: Request, res: Response) => {
       throw ApiError.unauthorized('Invalid email or password');
     }
 
-    res.cookie('token', result.token, {
+    const cookieOptions: any = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: 24 * 60 * 60 * 1000, // 1 day
-      domain: process.env.NODE_ENV === 'production' ? '.yourdomain.com' : 'localhost',
       path: '/',
-    });
+    };
+
+    // Only set domain in production
+    if (process.env.NODE_ENV === 'production' && process.env.DOMAIN) {
+      cookieOptions.domain = process.env.DOMAIN;
+    }
+
+    res.cookie('token', result.token, cookieOptions);
 
     const response = ApiResponse.success(result, 'Login successful');
     ApiResponse.send(res, response);
