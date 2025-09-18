@@ -15,16 +15,23 @@ app.use(helmet());
 
 
 // CORS configuration - allowing all origins
-const corsOptions = {
-  origin: true, // Allow all origins
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'X-CSRF-Token'],
-  exposedHeaders: ['set-cookie', 'token'],
-  maxAge: 86400, // 24 hours
-  preflightContinue: false,
-  optionsSuccessStatus: 204
-};
+// Allow all origins
+app.use(
+  cors({
+    origin: "*", // ⬅️ allow all
+    credentials: false, // must be false when using "*"
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: [
+      "Origin",
+      "X-Requested-With",
+      "Content-Type",
+      "Accept",
+      "Authorization",
+      "X-CSRF-Token",
+    ],
+    exposedHeaders: ["set-cookie", "token", "Authorization"],
+  })
+);
 
 // Enable CORS for all routes
 app.use(cors(corsOptions));
